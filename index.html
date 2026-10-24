@@ -135,6 +135,8 @@
   .project-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
   .project-head h2 { margin: 0; font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em; }
   .project-head .btn.link { margin-left: auto; }
+  .project-actions { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; }
+  .plist li.paused .p-title { color: var(--muted); }
   .project-note { color: var(--muted); font-size: 0.9375rem; margin: 2px 0 0; max-width: 70ch; }
 
   .bar { position: relative; height: 14px; margin: 14px 0 10px; background: #F1EAE3; border-radius: 999px; overflow: hidden; }
@@ -748,6 +750,18 @@
       <input type="number" id="p-buget" min="0" step="0.01" inputmode="decimal" required>
     </div>
     <div class="field">
+      <label for="p-prioritate">Prioritate</label>
+      <select id="p-prioritate">
+        <option value="1">Ridicată</option>
+        <option value="2">Medie</option>
+        <option value="3">Scăzută</option>
+      </select>
+    </div>
+    <p class="field check" id="p-cascade-box" hidden>
+      <input type="checkbox" id="p-cascade" checked>
+      <label for="p-cascade" style="margin:0">Aplică noua prioritate sarcinilor nefinalizate și seriilor recurente din proiect</label>
+    </p>
+    <div class="field">
       <label for="p-note">Note</label>
       <textarea id="p-note" maxlength="2000"></textarea>
     </div>
@@ -901,6 +915,15 @@
   }
   function isDone(t) { return t.status === data.statuses[data.statuses.length - 1]; }
   function isLate(t) { return t.termen && !isDone(t) && String(t.termen) < today(); }
+
+  function projectPrio(p) { return num(p && p.prioritate) || 2; }
+
+  /** Proiectele în ordinea priorității, apoi alfabetic. */
+  function projectsByPrio() {
+    return data.projects.slice().sort(function (a, b) {
+      return (projectPrio(a) - projectPrio(b)) || String(a.nume).localeCompare(String(b.nume), 'ro');
+    });
+  }
 
   function projectMap() {
     var m = {};
@@ -1355,7 +1378,12 @@
       ));
     }
 
-    data.projects.forEach(function (p) {
+    var recurByProject = {};
+    (data.recurring || []).forEach(function (r) {
+      (recurByProject[r.proiect_id] = recurByProject[r.proiect_id] || []).push(r);
+    });
+
+    projectsByPrio().forEach(function (p) {
       var s = st.byId[p.id];
       var budget = num(p.buget);
       var top = Math.max(s.planned, s.spent);
@@ -1394,6 +1422,7 @@
       var card = el('article', { class: 'project' },
         el('div', { class: 'project-head' },
           el('h2', { text: p.nume }),
+          el('span', { class: 'prio p' + projectPrio(p), text: PRIO[projectPrio(p)] }),
           el('button', { class: 'btn link', type: 'button', text: 'Editează',
             'aria-label': 'Editează proiectul ' + p.nume, onclick: function () { openProject(p); } })),
         p.note ? el('p', { class: 'project-note', text: p.note }) : null,
@@ -1406,8 +1435,25 @@
       } else {
         card.append(el('p', { class: 'project-note', text: 'Nicio sarcină legată de acest proiect.' }));
       }
-      card.append(el('button', { class: 'btn link', type: 'button', text: 'Adaugă sarcină în proiect',
-        onclick: function () { openTask(null, p.id); } }));
+      var recs = recurByProject[p.id] || [];
+      if (recs.length) {
+        var rul = el('ul', { class: 'plist' });
+        recs.forEach(function (r) {
+          rul.append(el('li', { class: isActive(r) ? null : 'paused' },
+            el('button', { type: 'button', 'aria-label': 'Editează ' + r.titlu, onclick: function () { openRecur(r); } },
+              el('span', { class: 'p-title t-title' }, r.titlu, el('span', { class: 'rec', text: '↻' })),
+              el('span', { class: 'p-meta', text: describeRule(r) }),
+              el('span', { class: 'p-meta', text: isActive(r) ? (r.persoana || 'Nedesemnată') : 'Oprită' }))));
+        });
+        card.append(el('details', { class: 'ptasks' },
+          el('summary', { text: recs.length + (recs.length === 1 ? ' sarcină recurentă' : ' sarcini recurente') }),
+          rul));
+      }
+      card.append(el('div', { class: 'project-actions' },
+        el('button', { class: 'btn link', type: 'button', text: 'Adaugă sarcină în proiect',
+          onclick: function () { openTask(null, p.id); } }),
+        el('button', { class: 'btn link', type: 'button', text: 'Adaugă sarcină recurentă',
+          onclick: function () { openRecur(null, p.id); } })));
       nodes.push(card);
     });
 
@@ -1437,7 +1483,7 @@
     var pm = projectMap();
     var pid = t ? (pm[t.proiect_id] ? t.proiect_id : '') : (presetProjectId || '');
     setOptions($('t-proiect'),
-      [['', 'Fără proiect']].concat(data.projects.map(function (p) { return [p.id, p.nume]; })), pid);
+      [['', 'Fără proiect']].concat(projectsByPrio().map(function (p) { return [p.id, p.nume]; })), pid);
 
     var cats = data.categories.slice();
     if (t && t.categorie && cats.indexOf(t.categorie) === -1) cats.push(t.categorie);
@@ -1449,7 +1495,7 @@
       t ? String(t.persoana || '').trim() : '');
 
     setOptions($('t-status'), data.statuses.map(function (s) { return [s, s]; }), t ? t.status : data.statuses[0]);
-    $('t-prioritate').value = t ? String(num(t.prioritate) || 2) : '2';
+    $('t-prioritate').value = String(t ? (num(t.prioritate) || 2) : projectPrio(pm[pid]));
     $('t-estimat').value = t && t.cost_estimat !== '' ? t.cost_estimat : '';
     $('t-real').value = t && t.cost_real !== '' ? t.cost_real : '';
     $('t-termen').value = t && t.termen ? String(t.termen).slice(0, 10) : '';
@@ -1460,6 +1506,16 @@
     $('dlg-task').showModal();
     $('t-titlu').focus();
   }
+
+  // Schimbarea proiectului preia prioritatea lui; rămâne modificabilă.
+  $('t-proiect').addEventListener('change', function () {
+    var p = projectMap()[$('t-proiect').value];
+    if (p) $('t-prioritate').value = String(projectPrio(p));
+  });
+  $('r-proiect').addEventListener('change', function () {
+    var p = projectMap()[$('r-proiect').value];
+    if (p) $('r-prioritate').value = String(projectPrio(p));
+  });
 
   var FORMS = {
     task: ['t', 'Salvează sarcina'],
@@ -1534,12 +1590,22 @@
     $('p-nume').value = p ? p.nume : '';
     $('p-buget').value = p && p.buget !== '' ? p.buget : '';
     $('p-note').value = p ? p.note : '';
+    $('p-prioritate').value = String(projectPrio(p));
+    $('p-cascade').checked = true;
+    syncCascade();
     $('p-error').textContent = '';
     $('p-delete').hidden = !p;
     setBusy('project', false);
     $('dlg-project').showModal();
     $('p-nume').focus();
   }
+
+  /** Bifa de propagare apare doar când prioritatea unui proiect existent se schimbă. */
+  function syncCascade() {
+    var p = projectMap()[editingProjectId];
+    $('p-cascade-box').hidden = !p || Number($('p-prioritate').value) === projectPrio(p);
+  }
+  $('p-prioritate').addEventListener('change', syncCascade);
 
   $('form-project').addEventListener('submit', function (e) {
     e.preventDefault();
@@ -1554,7 +1620,9 @@
     $('p-error').textContent = '';
     setBusy('project', true);
     server('saveProject', {
-      id: editingProjectId, nume: nume, buget: buget.value, note: $('p-note').value
+      id: editingProjectId, nume: nume, buget: buget.value, note: $('p-note').value,
+      prioritate: Number($('p-prioritate').value),
+      aplicaPrioritateSarcinilor: !$('p-cascade-box').hidden && $('p-cascade').checked
     }).then(function (d) {
       data = d; $('dlg-project').close(); render(); toast('Proiect salvat');
     }).catch(function (err) {
@@ -2977,7 +3045,7 @@
     $('r-interval-box').hidden = f !== 'La N zile';
   }
 
-  function openRecur(r) {
+  function openRecur(r, presetProjectId) {
     editingRecurId = r ? r.id : '';
     $('dlg-recur-title').textContent = r ? 'Editează sarcina recurentă' : 'Sarcină recurentă nouă';
     $('r-titlu').value = r ? r.titlu : '';
@@ -3003,14 +3071,14 @@
     $('r-sfarsit').value = r && r.data_sfarsit ? String(r.data_sfarsit).slice(0, 10) : '';
 
     var pm = projectMap();
+    var rpid = r ? (pm[r.proiect_id] ? r.proiect_id : '') : (presetProjectId || '');
     setOptions($('r-proiect'),
-      [['', 'Fără proiect']].concat(data.projects.map(function (p) { return [p.id, p.nume]; })),
-      r && pm[r.proiect_id] ? r.proiect_id : '');
+      [['', 'Fără proiect']].concat(projectsByPrio().map(function (p) { return [p.id, p.nume]; })), rpid);
     var cats = data.categories.slice();
     if (r && r.categorie && cats.indexOf(r.categorie) === -1) cats.push(r.categorie);
     setOptions($('r-categorie'),
       [['', 'Fără categorie']].concat(cats.map(function (c) { return [c, c]; })), r ? String(r.categorie || '') : '');
-    $('r-prioritate').value = r ? String(num(r.prioritate) || 2) : '2';
+    $('r-prioritate').value = String(r ? (num(r.prioritate) || 2) : projectPrio(pm[rpid]));
     $('r-puncte').value = String(r ? taskPoints(r) : 1);
     $('r-activa').checked = r ? isActive(r) : true;
 
