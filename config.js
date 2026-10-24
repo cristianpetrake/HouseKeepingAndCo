@@ -5,5 +5,5 @@
  */
 window.GOSPODARIE_CONFIG = {
   apiUrl: 'https://script.google.com/macros/s/AKfycbxOhYyIrdBRcgoAONCpP00KeItGID3LyNCNLiObZ-kmlibwIjPgFmJ8jvyQOCBwv5tmEw/exec',
-  clientId: '43130440576-iui45d6baf096ks01dgpvg6usb21blj3.apps.googleusercontent.com'
+  clientId: '343130440576-iui45d6baf096ks01dgpvg6usb21blj3.apps.googleusercontent.com'
 };
