@@ -135,6 +135,11 @@
   .project-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
   .project-head h2 { margin: 0; font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em; }
   .project-head .btn.link { margin-left: auto; }
+  .closed-tag { color: var(--muted); font-size: 0.875rem; }
+  .project.closed { background: transparent; box-shadow: none; }
+  .project.closed h2 { color: var(--muted); }
+  details.closed-projects { margin-top: 24px; }
+  details.closed-projects > summary { cursor: pointer; color: var(--muted); font-weight: 600; margin-bottom: 12px; }
   .project-actions { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; }
   .plist li.paused .p-title { color: var(--muted); }
   .project-note { color: var(--muted); font-size: 0.9375rem; margin: 2px 0 0; max-width: 70ch; }
@@ -770,6 +775,7 @@
       <button type="submit" class="btn primary" id="p-save">Salvează proiectul</button>
       <button type="button" class="btn" data-close>Renunță</button>
       <span class="spacer"></span>
+      <button type="button" class="btn" id="p-close">Închide proiectul</button>
       <button type="button" class="btn danger" id="p-delete">Șterge proiectul</button>
     </div>
   </form>
@@ -917,6 +923,13 @@
   function isLate(t) { return t.termen && !isDone(t) && String(t.termen) < today(); }
 
   function projectPrio(p) { return num(p && p.prioritate) || 2; }
+  function isClosed(p) { return !!(p && p.inchis_la); }
+
+  /** Proiectele deschise pentru listele de alegere, plus cel deja ales chiar dacă e închis. */
+  function projectChoices(keepId) {
+    return projectsByPrio().filter(function (p) { return !isClosed(p) || p.id === keepId; })
+      .map(function (p) { return [p.id, p.nume + (isClosed(p) ? ' (închis)' : '')]; });
+  }
 
   /** Proiectele în ordinea priorității, apoi alfabetic. */
   function projectsByPrio() {
@@ -1356,24 +1369,29 @@
     var body = $('projects-body');
     var st = projectStats();
 
+    var open = projectsByPrio().filter(function (p) { return !isClosed(p); });
+    var closed = data.projects.filter(isClosed).sort(function (a, b) {
+      return String(b.inchis_la).localeCompare(String(a.inchis_la));
+    });
     var totalBudget = 0, totalPlanned = 0, totalSpent = 0;
-    data.projects.forEach(function (p) {
+    open.forEach(function (p) {
       totalBudget += num(p.buget);
       totalPlanned += st.byId[p.id].planned;
       totalSpent += st.byId[p.id].spent;
     });
     $('projects-summary').replaceChildren(
-      el('strong', { text: data.projects.length + (data.projects.length === 1 ? ' proiect' : ' proiecte') }),
+      el('strong', { text: open.length + (open.length === 1 ? ' proiect deschis' : ' proiecte deschise') }),
       ', buget total ', el('strong', { class: 'num', text: lei(totalBudget) }),
       ', planificat ', el('strong', { class: 'num', text: lei(totalPlanned) }),
-      ', cheltuit ', el('strong', { class: 'num', text: lei(totalSpent) })
+      ', cheltuit ', el('strong', { class: 'num', text: lei(totalSpent) }),
+      closed.length ? ', ' + closed.length + (closed.length === 1 ? ' închis' : ' închise') : ''
     );
 
     var nodes = [];
 
-    if (!data.projects.length) {
+    if (!open.length) {
       nodes.push(el('div', { class: 'empty' },
-        el('div', { text: 'Nu există încă niciun proiect. Un proiect are un buget fix, iar sarcinile se leagă de el.' }),
+        el('div', { text: data.projects.length ? 'Toate proiectele sunt închise.' : 'Nu există încă niciun proiect. Un proiect are un buget fix, iar sarcinile se leagă de el.' }),
         el('button', { class: 'btn primary', type: 'button', text: 'Adaugă proiect', onclick: function () { openProject(null); } })
       ));
     }
@@ -1383,8 +1401,10 @@
       (recurByProject[r.proiect_id] = recurByProject[r.proiect_id] || []).push(r);
     });
 
-    projectsByPrio().forEach(function (p) {
+    var closedNodes = [];
+    open.concat(closed).forEach(function (p) {
       var s = st.byId[p.id];
+      var shut = isClosed(p);
       var budget = num(p.buget);
       var top = Math.max(s.planned, s.spent);
       var scale = Math.max(budget, top, 1);
@@ -1422,7 +1442,8 @@
       var card = el('article', { class: 'project' },
         el('div', { class: 'project-head' },
           el('h2', { text: p.nume }),
-          el('span', { class: 'prio p' + projectPrio(p), text: PRIO[projectPrio(p)] }),
+          shut ? el('span', { class: 'closed-tag', text: 'Închis la ' + roDate(String(p.inchis_la).slice(0, 10)) })
+            : el('span', { class: 'prio p' + projectPrio(p), text: PRIO[projectPrio(p)] }),
           el('button', { class: 'btn link', type: 'button', text: 'Editează',
             'aria-label': 'Editează proiectul ' + p.nume, onclick: function () { openProject(p); } })),
         p.note ? el('p', { class: 'project-note', text: p.note }) : null,
@@ -1449,6 +1470,7 @@
           el('summary', { text: recs.length + (recs.length === 1 ? ' sarcină recurentă' : ' sarcini recurente') }),
           rul));
       }
+      if (shut) { card.classList.add('closed'); closedNodes.push(card); return; }
       card.append(el('div', { class: 'project-actions' },
         el('button', { class: 'btn link', type: 'button', text: 'Adaugă sarcină în proiect',
           onclick: function () { openTask(null, p.id); } }),
@@ -1469,6 +1491,13 @@
           taskList(st.none.tasks))));
     }
 
+    if (closedNodes.length) {
+      var closedBox = el('details', { class: 'closed-projects' },
+        el('summary', { text: closedNodes.length === 1 ? '1 proiect închis' : closedNodes.length + ' proiecte închise' }));
+      closedBox.append.apply(closedBox, closedNodes);
+      nodes.push(closedBox);
+    }
+
     body.replaceChildren.apply(body, nodes);
   }
 
@@ -1483,7 +1512,7 @@
     var pm = projectMap();
     var pid = t ? (pm[t.proiect_id] ? t.proiect_id : '') : (presetProjectId || '');
     setOptions($('t-proiect'),
-      [['', 'Fără proiect']].concat(projectsByPrio().map(function (p) { return [p.id, p.nume]; })), pid);
+      [['', 'Fără proiect']].concat(projectChoices(pid)), pid);
 
     var cats = data.categories.slice();
     if (t && t.categorie && cats.indexOf(t.categorie) === -1) cats.push(t.categorie);
@@ -1595,6 +1624,8 @@
     syncCascade();
     $('p-error').textContent = '';
     $('p-delete').hidden = !p;
+    $('p-close').hidden = !p;
+    $('p-close').textContent = isClosed(p) ? 'Redeschide proiectul' : 'Închide proiectul';
     setBusy('project', false);
     $('dlg-project').showModal();
     $('p-nume').focus();
@@ -1627,6 +1658,27 @@
       data = d; $('dlg-project').close(); render(); toast('Proiect salvat');
     }).catch(function (err) {
       setBusy('project', false); $('p-error').textContent = errText(err);
+    });
+  });
+
+  $('p-close').addEventListener('click', function () {
+    var p = projectMap()[editingProjectId];
+    if (!p) return;
+    var closing = !isClosed(p);
+    if (closing) {
+      var left = data.tasks.filter(function (t) { return t.proiect_id === p.id && !isDone(t); }).length;
+      var series = (data.recurring || []).filter(function (r) { return r.proiect_id === p.id && isActive(r); }).length;
+      var msg = 'Închizi proiectul „' + p.nume + '”?';
+      if (left) msg += '\n\n' + (left === 1 ? '1 sarcină nefinalizată trece' : left + ' sarcini nefinalizate trec') + ' pe Gata, fără puncte.';
+      if (series) msg += '\n' + (series === 1 ? '1 serie recurentă se oprește.' : series + ' serii recurente se opresc.');
+      if (!confirm(msg)) return;
+    }
+    setBusy('project', true);
+    $('p-close').disabled = true;
+    server('setProjectClosed', p.id, closing).then(function (d) {
+      data = d; $('dlg-project').close(); render(); toast(closing ? 'Proiect închis' : 'Proiect redeschis');
+    }).catch(function (err) {
+      setBusy('project', false); $('p-close').disabled = false; $('p-error').textContent = errText(err);
     });
   });
 
@@ -1740,7 +1792,8 @@
     /* Economii către proiecte */
     var allocBody = $('alloc-body');
     var summary = $('alloc-summary');
-    if (!data.projects.length) {
+    var allocProjects = data.projects.filter(function (p) { return !isClosed(p); });
+    if (!allocProjects.length) {
       summary.replaceChildren();
       allocBody.replaceChildren(el('div', { class: 'empty',
         text: 'Nu există proiecte. Adaugă unul din „Proiecte și bugete”, apoi stabilește aici cât pui deoparte lunar pentru el.' }));
@@ -1749,7 +1802,7 @@
 
     var allocated = 0;
     var atbody = el('tbody');
-    data.projects.forEach(function (p) {
+    allocProjects.forEach(function (p) {
       var remaining = Math.max(num(p.buget) - num(p.cheltuit), 0);
       var a = num(p.alocare_lunara);
       allocated += a;
@@ -3073,7 +3126,7 @@
     var pm = projectMap();
     var rpid = r ? (pm[r.proiect_id] ? r.proiect_id : '') : (presetProjectId || '');
     setOptions($('r-proiect'),
-      [['', 'Fără proiect']].concat(projectsByPrio().map(function (p) { return [p.id, p.nume]; })), rpid);
+      [['', 'Fără proiect']].concat(projectChoices(rpid)), rpid);
     var cats = data.categories.slice();
     if (r && r.categorie && cats.indexOf(r.categorie) === -1) cats.push(r.categorie);
     setOptions($('r-categorie'),
