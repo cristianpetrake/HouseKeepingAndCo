@@ -8,19 +8,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #F5F7FA;
+    --bg: #FAF6F2;
     --surface: #FFFFFF;
-    --ink: #1A2233;
-    --muted: #64708A;
-    --line: #E3E8EF;
-    --accent: #2563EB;
-    --accent-soft: #EAF1FE;
+    --ink: #2B211C;
+    --muted: #7A6C63;
+    --line: #EDE4DB;
+    --accent: #B8532F;
+    --accent-soft: #F8EAE2;
     --accent-ink: #FFFFFF;
-    --planned: #BFD4FB;
-    --warn: #C27C0E;
-    --danger: #DC3B3B;
+    --planned: #EDC3AE;
+    --warn: #B7791F;
+    --danger: #C23B3B;
     --radius: 10px;
-    --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+    --shadow: 0 1px 2px rgba(43, 33, 28, 0.04), 0 1px 3px rgba(43, 33, 28, 0.06);
     --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     color-scheme: light;
   }
@@ -72,11 +72,11 @@
   .btn {
     border: 1px solid var(--line); background: var(--surface);
     padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 500;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05); transition: background .15s, border-color .15s;
+    box-shadow: 0 1px 2px rgba(43, 33, 28, 0.05); transition: background .15s, border-color .15s;
   }
-  .btn:hover { border-color: #C9D2DE; background: #F9FAFC; }
+  .btn:hover { border-color: #DCCFC3; background: #FCF9F6; }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
-  .btn.primary:hover { background: #1D4ED8; border-color: #1D4ED8; }
+  .btn.primary:hover { background: #9A4123; border-color: #9A4123; }
   .btn.danger { color: var(--danger); }
   .btn.link { border: 0; background: none; box-shadow: none; padding: 4px 6px; color: var(--accent); font-weight: 500; }
   .btn.link:hover { background: none; text-decoration: underline; text-underline-offset: 3px; }
@@ -103,12 +103,12 @@
     width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface);
     border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
   }
-  .tasks tbody tr:hover td { background: #FAFBFD; }
+  .tasks tbody tr:hover td { background: #FDFAF7; }
   .tasks th, .tasks td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
   .tasks tr:last-child td { border-bottom: 0; }
   .tasks th {
     font-size: 0.75rem; font-weight: 600; color: var(--muted); white-space: nowrap; padding: 8px 12px;
-    text-transform: uppercase; letter-spacing: 0.04em; background: #F9FAFC;
+    text-transform: uppercase; letter-spacing: 0.04em; background: #FCF9F6;
   }
   .tasks th button { background: none; border: 0; padding: 4px 0; cursor: pointer; font-weight: 600; color: inherit; font-size: inherit; text-transform: inherit; letter-spacing: inherit; }
   .tasks th button[aria-sort] { color: var(--ink); }
@@ -125,7 +125,7 @@
   .prio.p2::before { background: var(--warn); }
   .prio.p3::before { background: transparent; border: 1.5px solid var(--muted); }
 
-  .empty { background: var(--surface); border: 1px dashed #CDD5E0; border-radius: var(--radius); padding: 28px 20px; color: var(--muted); }
+  .empty { background: var(--surface); border: 1px dashed #DCCFC3; border-radius: var(--radius); padding: 28px 20px; color: var(--muted); }
   .empty .btn { margin-top: 12px; }
 
   /* Proiecte */
@@ -135,7 +135,7 @@
   .project-head .btn.link { margin-left: auto; }
   .project-note { color: var(--muted); font-size: 0.9375rem; margin: 2px 0 0; max-width: 70ch; }
 
-  .bar { position: relative; height: 14px; margin: 14px 0 10px; background: #EEF1F5; border-radius: 999px; overflow: hidden; }
+  .bar { position: relative; height: 14px; margin: 14px 0 10px; background: #F1EAE3; border-radius: 999px; overflow: hidden; }
   .bar > div { position: absolute; top: 0; bottom: 0; left: 0; }
   .bar .planned { background: var(--planned); }
   .bar .spent { background: var(--accent); }
@@ -171,13 +171,13 @@
   dialog {
     border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink);
     padding: 0; width: min(560px, calc(100vw - 24px));
-    box-shadow: 0 20px 40px -8px rgba(16, 24, 40, 0.18);
+    box-shadow: 0 20px 40px -8px rgba(43, 33, 28, 0.18);
   }
-  dialog::backdrop { background: rgba(26, 34, 51, 0.35); backdrop-filter: blur(2px); }
+  dialog::backdrop { background: rgba(43, 33, 28, 0.35); backdrop-filter: blur(2px); }
   dialog form { padding: 22px 24px 20px; }
   dialog h2 { margin: 0 0 16px; font-size: 1.25rem; font-weight: 600; }
   .field { margin-bottom: 14px; }
-  .field label { display: block; font-size: 0.8125rem; font-weight: 600; color: #3A4558; margin-bottom: 5px; }
+  .field label { display: block; font-size: 0.8125rem; font-weight: 600; color: #4A3B32; margin-bottom: 5px; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
   .form-error { color: var(--danger); font-size: 0.9375rem; margin: 0 0 12px; min-height: 1.3em; }
   .actions { display: flex; gap: 10px; align-items: center; }
@@ -186,7 +186,7 @@
   #toast {
     position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
     background: var(--ink); color: #fff; padding: 10px 16px; border-radius: var(--radius);
-    box-shadow: 0 10px 24px -6px rgba(16, 24, 40, 0.3);
+    box-shadow: 0 10px 24px -6px rgba(43, 33, 28, 0.3);
     font-size: 0.9375rem; max-width: calc(100vw - 32px); display: none;
   }
   #toast.show { display: block; }
