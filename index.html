@@ -106,10 +106,10 @@
     border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
   }
   .tasks tbody tr:hover td { background: #FDFAF7; }
-  .tasks th, .tasks td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tasks th, .tasks td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
   .tasks tr:last-child td { border-bottom: 0; }
   .tasks th {
-    font-size: 0.75rem; font-weight: 600; color: var(--muted); white-space: nowrap; padding: 8px 12px;
+    font-size: 0.75rem; font-weight: 600; color: var(--muted); white-space: nowrap; padding: 8px;
     text-transform: uppercase; letter-spacing: 0.04em; background: #FCF9F6;
   }
   .tasks th button { background: none; border: 0; padding: 4px 0; cursor: pointer; font-weight: 600; color: inherit; font-size: inherit; text-transform: inherit; letter-spacing: inherit; }
@@ -167,7 +167,27 @@
   details.ptasks { margin-top: 12px; }
   details.ptasks summary { cursor: pointer; color: var(--muted); font-size: 0.9375rem; }
   .plist { list-style: none; margin: 8px 0 0; padding: 0; }
-  .plist li { border-top: 1px solid var(--line); }
+  .plist li { border-top: 1px solid var(--line); display: flex; align-items: center; gap: 6px; }
+  .plist li > button:last-child { flex: 1; min-width: 0; }
+
+  .status-btns { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+  .st, .qcheck {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    background: none; border: 0; border-radius: 999px; cursor: pointer; color: var(--muted);
+  }
+  .st { width: 32px; height: 32px; padding: 0; }
+  .st span { display: none; }
+  .st svg, .qcheck svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+  @media (hover: hover) { .st:hover, .qcheck:hover { color: var(--ink); background: var(--bg); } }
+  .st[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+  .st-done[aria-pressed="true"] { background: #E6F2EA; color: #2F7D4F; }
+  .qcheck { width: 36px; height: 36px; padding: 0; }
+  .qcheck.on { color: #2F7D4F; }
+  .tasks td.c-status { white-space: nowrap; }
+  .tasks td.late { white-space: normal; min-width: 10ch; }
+  .status-btns .st { width: 30px; height: 30px; }
+  .t-head { display: flex; align-items: flex-start; gap: 6px; }
+  .t-head .qcheck { margin: -7px 0 -7px -8px; }
   .plist button {
     width: 100%; display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline;
     background: none; border: 0; padding: 8px 0; cursor: pointer; text-align: left;
@@ -198,7 +218,11 @@
     box-shadow: 0 10px 24px -6px rgba(43, 33, 28, 0.3);
     font-size: 0.9375rem; max-width: calc(100vw - 32px); display: none;
   }
-  #toast.show { display: block; }
+  #toast.show { display: flex; align-items: center; gap: 14px; }
+  .toast-action {
+    background: none; border: 0; padding: 4px 2px; color: #F3C3AC; font-weight: 600; cursor: pointer;
+    text-transform: uppercase; letter-spacing: 0.03em; font-size: 0.8125rem;
+  }
   #toast.error { background: var(--danger); color: #fff; }
 
   /* Buget lunar */
@@ -343,7 +367,11 @@
     .tasks td.num { white-space: normal; }
     #tasks-body .tasks td.c-title { order: -1; }
     #tasks-body .tasks td:last-child { grid-column: 1 / -1; text-align: right; margin-top: -4px; }
-    #tasks-body .tasks td select { width: 100%; min-height: 38px; }
+    #tasks-body .tasks td.c-status { grid-column: 1 / -1; }
+    .status-btns { display: flex; width: 100%; }
+    .status-btns .st { flex: 1; width: auto; height: 40px; font-size: 0.8125rem; font-weight: 500; }
+    .st span { display: inline; }
+    .qcheck { width: 40px; height: 40px; }
     #pt-body .tasks tr { grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: 6px 10px; }
     #pt-body .tasks td.c-rank { width: auto; }
     #pt-body .tasks td.c-title { grid-column: auto; }
@@ -945,12 +973,17 @@
   }
 
   var toastTimer = null;
-  function toast(msg, isError) {
+  /** action: { label, fn } opțional, pentru un buton precum „Anulează”. */
+  function toast(msg, isError, action) {
     var t = $('toast');
-    t.textContent = msg;
+    t.replaceChildren(el('span', { text: msg }));
+    if (action) {
+      t.append(el('button', { type: 'button', class: 'toast-action', text: action.label,
+        onclick: function () { t.className = ''; action.fn(); } }));
+    }
     t.className = 'show' + (isError ? ' error' : '');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.className = ''; }, isError ? 6000 : 2500);
+    toastTimer = setTimeout(function () { t.className = ''; }, isError ? 6000 : (action ? 5000 : 2500));
   }
 
   function errText(e) {
@@ -1285,20 +1318,15 @@
     var tbody = el('tbody');
     list.forEach(function (t) {
       var p = pm[t.proiect_id];
-      var statusSel = el('select', {
-        'aria-label': 'Status pentru ' + t.titlu,
-        onchange: function (e) { changeStatus(t, e.target.value); }
-      });
-      setOptions(statusSel, data.statuses.map(function (s) { return [s, s]; }), t.status);
 
       var pr = num(t.prioritate);
       tbody.append(el('tr', { class: isDone(t) ? 'done' : null },
         el('td', { 'data-label': 'Prioritate' }, el('span', { class: 'prio p' + pr, text: PRIO[pr] || '–' })),
-        el('td', { class: 'c-title' },
+        el('td', { class: 'c-title' }, el('div', { class: 't-head' }, quickCheck(t), el('div', null,
           el('div', { class: 't-title' }, t.titlu,
             t.recurenta_id ? el('span', { class: 'rec', title: 'Din sarcină recurentă', text: '↻ recurentă' }) : null,
             el('span', { class: 'pts-tag', text: taskPoints(t) + ' p' })),
-          t.descriere ? el('div', { class: 't-desc', text: t.descriere }) : null),
+          t.descriere ? el('div', { class: 't-desc', text: t.descriere }) : null))),
         el('td', { 'data-label': 'Proiect', text: p ? p.nume : 'Fără proiect' }),
         el('td', { 'data-label': 'Persoană', text: t.persoana || '–' }),
         el('td', { 'data-label': 'Categorie', text: t.categorie || '–' }),
@@ -1306,7 +1334,7 @@
           text: t.termen ? roDate(t.termen) + (isLate(t) ? ' (depășit)' : '') : '–' }),
         el('td', { 'data-label': 'Estimat', class: 'money num', text: leiOrDash(t.cost_estimat) }),
         el('td', { 'data-label': 'Real', class: 'money num', text: leiOrDash(t.cost_real) }),
-        el('td', { 'data-label': 'Status' }, statusSel),
+        el('td', { 'data-label': 'Status', class: 'c-status' }, statusButtons(t)),
         el('td', null, can('proiecte') ? el('button', { class: 'btn link', type: 'button', text: 'Editează',
           'aria-label': 'Editează ' + t.titlu, onclick: function () { openTask(t); } }) : null)
       ));
@@ -1317,13 +1345,56 @@
 
   function changeStatus(t, status) {
     var previous = t.status;
+    if (status === previous) return;
     t.status = status;
-    renderTasks();
+    render();
     server('setTaskStatus', t.id, status).then(function (d) {
-      data = d; render(); toast('Status salvat');
+      data = d; render();
+      if (isDone(t)) toast('„' + t.titlu + '” e gata', false, { label: 'Anulează', fn: function () { changeStatus(t, previous); } });
+      else toast('Status: ' + status);
     }).catch(function (e) {
       t.status = previous; render(); toast(errText(e), true);
     });
+  }
+
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  var STATUS_ICONS = {
+    todo: '<circle cx="12" cy="12" r="8"/>',
+    doing: '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"/>',
+    wait: '<circle cx="12" cy="12" r="8"/><path d="M10 9v6M14 9v6"/>',
+    done: '<circle cx="12" cy="12" r="9" fill="currentColor" stroke="none"/><path d="M8 12.5l2.8 2.8L16 10" stroke="#fff"/>'
+  };
+  function statusKind(s) {
+    var i = data.statuses.indexOf(s);
+    if (i === data.statuses.length - 1) return 'done';
+    if (i === 0) return 'todo';
+    return /lucru/i.test(s) ? 'doing' : 'wait';
+  }
+  function statusIcon(kind) {
+    var svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = STATUS_ICONS[kind];
+    return svg;
+  }
+
+  /** Butoane cu iconițe pentru fiecare status; cel curent e evidențiat. */
+  function statusButtons(t) {
+    return el('div', { class: 'status-btns', role: 'group', 'aria-label': 'Status pentru ' + t.titlu },
+      data.statuses.map(function (s) {
+        var kind = statusKind(s);
+        return el('button', { type: 'button', class: 'st st-' + kind, title: s, 'aria-pressed': String(t.status === s),
+          onclick: function () { changeStatus(t, s); } }, statusIcon(kind), el('span', { text: s }));
+      }));
+  }
+
+  /** Bifă rapidă: comută între Gata și primul status. */
+  function quickCheck(t) {
+    var done = isDone(t);
+    return el('button', { type: 'button', class: 'qcheck' + (done ? ' on' : ''), 'aria-pressed': String(done),
+      title: done ? 'Redeschide' : 'Marchează gata', 'aria-label': (done ? 'Redeschide ' : 'Marchează gata ') + t.titlu,
+      onclick: function () { changeStatus(t, done ? data.statuses[0] : data.statuses[data.statuses.length - 1]); } },
+      statusIcon(done ? 'done' : 'todo'));
   }
 
   /* ---------- Proiecte ---------- */
@@ -1348,7 +1419,7 @@
     });
     var ul = el('ul', { class: 'plist' });
     sorted.forEach(function (t) {
-      ul.append(el('li', { class: isDone(t) ? 'done' : null },
+      ul.append(el('li', { class: isDone(t) ? 'done' : null }, quickCheck(t),
         el('button', { type: 'button', 'aria-label': 'Editează ' + t.titlu, onclick: function () { openTask(t); } },
           el('span', { class: 'p-title t-title', text: t.titlu }),
           el('span', { class: 'p-meta', text: t.status }),
