@@ -337,10 +337,13 @@
   .tasks.simple td.c-due { white-space: nowrap; width: 1%; }
   .tasks.simple td.c-due.late { color: var(--danger); font-weight: 700; }
   .tasks.simple td.c-act { width: 1%; white-space: nowrap; text-align: right; }
+  .tasks.simple td.c-who { white-space: nowrap; }
+  .tasks.simple td.c-who.muted { color: var(--muted); }
   @media (max-width: 760px) {
     #tasks-body .tasks.simple tr.row-late { background: var(--late-bg); border-color: var(--danger); box-shadow: inset 4px 0 0 var(--danger); }
     #tasks-body .tasks.simple tr.row-late td { background: none; box-shadow: none; }
-    #tasks-body .tasks.simple td.c-title, #tasks-body .tasks.simple td.c-due { grid-column: 1 / -1; width: auto; }
+    #tasks-body .tasks.simple td.c-title { grid-column: 1 / -1; }
+    #tasks-body .tasks.simple td.c-due, #tasks-body .tasks.simple td.c-who { width: auto; }
   }
 
   [hidden] { display: none !important; }
@@ -1354,6 +1357,7 @@
 
     var thead = el('thead', null, el('tr', null,
       sortHeader('Sarcină', 'titlu'),
+      sortHeader('Pentru', 'persoana'),
       sortHeader('Termen', 'termen'),
       sortHeader('Status', 'status'),
       el('th', { scope: 'col' })
@@ -1364,6 +1368,7 @@
       var lateRow = isLate(t);
       tbody.append(el('tr', { class: [isDone(t) ? 'done' : '', lateRow ? 'row-late' : ''].join(' ').trim() || null },
         el('td', { class: 'c-title' }, el('div', { class: 't-title', text: t.titlu })),
+        el('td', { 'data-label': 'Pentru', class: 'c-who' + (t.persoana ? '' : ' muted'), text: t.persoana || 'Nedesemnată' }),
         el('td', { 'data-label': 'Termen', class: 'c-due num' + (lateRow ? ' late' : ''),
           text: t.termen ? roDate(t.termen) + (lateRow ? ', depășit' : '') : '–' }),
         el('td', { 'data-label': 'Status', class: 'c-status' }, statusButtons(t)),
