@@ -946,6 +946,30 @@
   </form>
 </dialog>
 
+<dialog id="dlg-withdraw" aria-labelledby="dlg-withdraw-title">
+  <form id="form-withdraw" novalidate>
+    <h2 id="dlg-withdraw-title">Retrage bani</h2>
+    <p class="summary" id="wd-info" style="margin-top:0"></p>
+    <div class="field">
+      <label for="wd-suma">Sumă (lei)</label>
+      <input type="number" id="wd-suma" min="0" step="0.01" inputmode="decimal">
+      <button type="button" class="btn link" id="wd-all" style="align-self:flex-start">Tot soldul</button>
+    </div>
+    <div class="field">
+      <label for="wd-data">Data</label>
+      <input type="date" id="wd-data">
+    </div>
+    <div class="field">
+      <label for="wd-nota">Pentru ce (opțional)</label>
+      <input type="text" id="wd-nota" maxlength="300">
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn primary" id="wd-go">Retrage</button>
+      <button type="button" class="btn" data-close>Renunță</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="print-area"></div>
 
@@ -2353,7 +2377,7 @@
     });
   }
 
-  function walletTable(rows) {
+  function walletTable(rows, withdraw) {
     var tbody = el('tbody');
     rows.forEach(function (w) {
       tbody.append(el('tr', null,
@@ -2362,7 +2386,9 @@
         el('td', { 'data-label': 'Câștigat în total', class: 'money num', text: leiExact(w.castig) }),
         el('td', { 'data-label': 'Cheltuit', class: 'money num', text: leiExact(w.chelt) }),
         el('td', { 'data-label': 'Luna aceasta, estimat', class: 'money num',
-          text: leiExact(w.estimat) + ' (' + pointsWord(w.pts) + ')' })
+          text: leiExact(w.estimat) + ' (' + pointsWord(w.pts) + ')' }),
+        withdraw ? el('td', null, w.sold > 0 ? el('button', { class: 'btn', type: 'button', text: 'Retrage bani',
+          'aria-label': 'Retrage bani din portofelul lui ' + w.nume, onclick: function () { openWithdraw(w); } }) : null) : null
       ));
     });
     return el('table', { class: 'tasks' },
@@ -2371,7 +2397,8 @@
         el('th', { scope: 'col', class: 'money', text: 'Sold' }),
         el('th', { scope: 'col', class: 'money', text: 'Câștigat în total' }),
         el('th', { scope: 'col', class: 'money', text: 'Cheltuit' }),
-        el('th', { scope: 'col', class: 'money', text: 'Luna aceasta, estimat' }))),
+        el('th', { scope: 'col', class: 'money', text: 'Luna aceasta, estimat' }),
+        withdraw ? el('th', { scope: 'col' }) : null)),
       tbody);
   }
 
@@ -2453,10 +2480,43 @@
       leiExact(num(r.settings.plafon)) + ' pe persoană și ' + leiExact(num(r.settings.fond)) +
       ' în total pe lună. Câștigul lunii intră în portofel pe 1 ale lunii următoare.';
     var entries = r.ledger.filter(function (x) { return names.some(function (n) { return samePerson(n, x.persoana); }); });
-    $('pt-wallet').replaceChildren(walletTable(walletRows(names)),
+    $('pt-wallet').replaceChildren(walletTable(walletRows(names), can('bugete')),
       el('details', { class: 'who-done', style: 'margin-top:12px' },
-        el('summary', { text: 'Istoric portofel' }), ledgerList(entries, false)));
+        el('summary', { text: 'Istoric portofel' }), ledgerList(entries, can('bugete'))));
   }
+
+  /* Retragere de bani din portofel (doar rolul Bugete), direct din tab-ul Puncte. */
+  var withdrawCtx = null;
+  function openWithdraw(w) {
+    withdrawCtx = w;
+    $('wd-info').replaceChildren('Din portofelul lui ', el('strong', { text: w.nume }), '. Sold: ',
+      el('strong', { class: 'num', text: leiExact(w.sold) }), '.');
+    $('wd-suma').value = '';
+    $('wd-suma').max = w.sold;
+    $('wd-data').value = today();
+    $('wd-nota').value = '';
+    $('wd-go').disabled = false;
+    $('dlg-withdraw').showModal();
+    $('wd-suma').focus();
+  }
+  $('wd-all').addEventListener('click', function () { if (withdrawCtx) $('wd-suma').value = withdrawCtx.sold; });
+  $('form-withdraw').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var w = withdrawCtx;
+    if (!w) return;
+    var suma = Math.round(Number($('wd-suma').value) * 100) / 100;
+    if (!(suma > 0)) { toast('Scrie suma retrasă.', true); $('wd-suma').focus(); return; }
+    if (suma > w.sold) { toast('Suma depășește soldul (' + leiExact(w.sold) + ').', true); $('wd-suma').focus(); return; }
+    if (!$('wd-data').value) { toast('Alege data.', true); return; }
+    $('wd-go').disabled = true;
+    server('addRewardSpend', {
+      persoana: w.nume, suma: suma, data: $('wd-data').value,
+      nota: $('wd-nota').value.trim() ? 'Retras: ' + $('wd-nota').value.trim() : 'Retras numerar'
+    }).then(function (d) {
+      data = d; withdrawCtx = null; $('dlg-withdraw').close();
+      render(); toast(leiExact(suma) + ' retrași din portofelul lui ' + w.nume);
+    }).catch(function (er) { $('wd-go').disabled = false; toast(errText(er), true); });
+  });
 
   $('form-rw').addEventListener('submit', function (e) {
     e.preventDefault();
