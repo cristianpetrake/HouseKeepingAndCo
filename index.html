@@ -2108,18 +2108,47 @@
   function pointsWord(n) { return n === 1 ? '1 punct' : n + ' puncte'; }
 
   /** Puncte și sarcini făcute pe persoană, pentru o lună. */
+  /** Bonusul pentru o zi: pragul cel mai mare atins de numărul de sarcini recurente făcute. */
+  function bonusFor(count) {
+    var best = 0;
+    (data.bonusRules || []).forEach(function (r) { if (count >= r.prag && r.puncte > best) best = r.puncte; });
+    return best;
+  }
+
   function monthScores(ym) {
     var by = {};
+    var entry = function (who) {
+      var key = who.toLowerCase();
+      return by[key] || (by[key] = { nume: who, puncte: 0, bonus: 0, tasks: [], bonusDays: [] });
+    };
+    var perDay = {};
     (data.pointsTasks || []).forEach(function (t) {
       var who = String(t.persoana || '').trim();
-      if (!who || doneMonth(t) !== ym) return;
-      var key = who.toLowerCase();
-      if (!by[key]) by[key] = { nume: who, puncte: 0, tasks: [] };
-      by[key].puncte += taskPoints(t);
-      by[key].tasks.push(t);
+      if (!who) return;
+      if (doneMonth(t) === ym) {
+        var e = entry(who);
+        e.puncte += taskPoints(t);
+        e.tasks.push(t);
+      }
+      // Bonusul ține de ziua termenului: sarcini recurente făcute, cu termen în aceeași zi.
+      var day = String(t.termen || '').slice(0, 10);
+      if (t.recurenta_id && isDone(t) && day.slice(0, 7) === ym) {
+        var k = who.toLowerCase() + '|' + day;
+        (perDay[k] = perDay[k] || { who: who, day: day, count: 0 }).count++;
+      }
+    });
+    Object.keys(perDay).forEach(function (k) {
+      var d = perDay[k];
+      var b = bonusFor(d.count);
+      if (!b) return;
+      var e = entry(d.who);
+      e.bonus += b;
+      e.puncte += b;
+      e.bonusDays.push({ day: d.day, count: d.count, puncte: b });
     });
     return by;
   }
+
 
   function renderPoints() {
     var cur = today().slice(0, 7);
@@ -2130,14 +2159,19 @@
     var by = monthScores(ui.month);
     var names = personNames((data.pointsTasks || []).map(function (t) { return t.persoana; }));
     var rows = names.map(function (n) {
-      return by[n.toLowerCase()] || { nume: n, puncte: 0, tasks: [] };
+      return by[n.toLowerCase()] || { nume: n, puncte: 0, bonus: 0, tasks: [], bonusDays: [] };
     }).sort(function (a, b) { return b.puncte - a.puncte || a.nume.localeCompare(b.nume, 'ro'); });
 
     var total = rows.reduce(function (s, r) { return s + r.puncte; }, 0);
     var count = rows.reduce(function (s, r) { return s + r.tasks.length; }, 0);
+    var bonusTotal = rows.reduce(function (s, r) { return s + (r.bonus || 0); }, 0);
+    var rules = (data.bonusRules || []).map(function (r) { return r.prag + ' → +' + r.puncte + ' p'; }).join(', ');
     $('pt-summary').replaceChildren(
       el('strong', { text: pointsWord(total) }), ' din ',
-      el('strong', { text: count + (count === 1 ? ' sarcină terminată' : ' sarcini terminate') }));
+      el('strong', { text: count + (count === 1 ? ' sarcină terminată' : ' sarcini terminate') }),
+      bonusTotal ? ', inclusiv ' : '', bonusTotal ? el('strong', { text: pointsWord(bonusTotal) + ' bonus' }) : '',
+      rules ? el('div', { class: 'summary', style: 'margin-top:4px',
+        text: 'Bonus pe zi pentru sarcinile recurente făcute, după ziua termenului: ' + rules + ' (se aplică pragul cel mai mare).' }) : '');
 
     var body = $('pt-body');
     if (!rows.length) {
@@ -2151,19 +2185,23 @@
         if (r.puncte !== last) { rank = i + 1; last = r.puncte; }
         var fill = el('div', { class: 'spent' });
         fill.style.width = (r.puncte / max * 100).toFixed(1) + '%';
-        var detail = r.tasks.length
+        var bonusItems = (r.bonusDays || []).slice().sort(function (a, b) { return a.day.localeCompare(b.day); })
+          .map(function (b) { return el('li', { text: 'Bonus ' + roDate(b.day) + ': ' + b.count + ' sarcini recurente făcute, +' + pointsWord(b.puncte) }); });
+        var detail = r.tasks.length || bonusItems.length
           ? el('details', { class: 'who-done' },
-              el('summary', { text: r.tasks.length + (r.tasks.length === 1 ? ' sarcină' : ' sarcini') }),
+              el('summary', { text: r.tasks.length + (r.tasks.length === 1 ? ' sarcină' : ' sarcini') +
+                (bonusItems.length ? ', ' + bonusItems.length + (bonusItems.length === 1 ? ' bonus' : ' bonusuri') : '') }),
               el('ul', null, r.tasks.slice().sort(function (a, b) {
                 return String(a.finalizat_la || a.modificat_la).localeCompare(String(b.finalizat_la || b.modificat_la));
               }).map(function (t) {
                 return el('li', { text: t.titlu + ', ' + roDate(t.finalizat_la || t.modificat_la) + ', ' + pointsWord(taskPoints(t)) });
-              })))
+              }).concat(bonusItems)))
           : el('span', { class: 'summary', text: 'nicio sarcină' });
         tbody.append(el('tr', null,
           el('td', { class: 'c-rank', text: r.puncte > 0 ? String(rank) : '–' }),
           el('td', { class: 'c-title' }, el('div', { class: 't-title', text: r.nume })),
-          el('td', { 'data-label': 'Puncte', class: 'pts', text: pointsWord(r.puncte) }),
+          el('td', { 'data-label': 'Puncte', class: 'pts' }, pointsWord(r.puncte),
+            r.bonus ? el('div', { class: 'summary', style: 'font-weight:400;margin:0', text: 'din care bonus ' + pointsWord(r.bonus) }) : null),
           el('td', { class: 'c-pts' }, el('div', { class: 'bar', 'aria-hidden': 'true' }, fill)),
           el('td', { 'data-label': 'Terminate' }, detail)
         ));
