@@ -1207,6 +1207,21 @@
     });
   }
 
+  /** Reîncarcă și recreează sarcinile recurente care lipsesc de azi până duminică. */
+  function reloadRecurring(e) {
+    var btn = e && e.currentTarget;
+    if (btn) btn.disabled = true;
+    return server('regenereazaSaptamana').then(function (d) {
+      data = d;
+      $('loading').hidden = true;
+      render();
+      var n = d.regenerated || 0;
+      toast(n ? 'Date reîncărcate. Am refăcut ' + (n === 1 ? 'o sarcină recurentă' : n + ' sarcini recurente') + '.' : 'Date reîncărcate');
+    }).catch(function (er) {
+      toast('Nu am putut reîncărca: ' + errText(er), true);
+    }).then(function () { if (btn) btn.disabled = false; });
+  }
+
   function can(role) { return !!(data && data.roles && data.roles[role]); }
 
   /** Taburile vizibile pentru rolurile utilizatorului. */
@@ -1417,7 +1432,7 @@
         { label: 'Anulează', fn: function () { changeStatus(t, previous); } });
       else toast('Status: ' + status + (persoana ? ', pentru ' + persoana : ''));
     }).catch(function (e) {
-      t.status = previous; t.persoana = prevWho; render(); toast(errText(e), true);
+      t.status = previous; t.persoana = prevWho; render(); toast(errText(er), true);
     });
   }
 
@@ -2061,7 +2076,7 @@
     server('setProjectAllocation', p.id, value).then(function (d) {
       data = d; render(); toast('Alocare salvată');
     }).catch(function (e) {
-      render(); toast(errText(e), true);
+      render(); toast(errText(er), true);
     });
   }
 
@@ -3431,7 +3446,7 @@
   $('tab-projects').addEventListener('click', function () { ui.view = 'projects'; if (data) render(); });
   $('btn-add-task').addEventListener('click', function () { if (data && can('proiecte')) openTask(null); });
   $('btn-add-project').addEventListener('click', function () { if (data) openProject(null); });
-  $('btn-reload-1').addEventListener('click', function () { load(true); });
+  $('btn-reload-1').addEventListener('click', reloadRecurring);
   $('btn-reload-2').addEventListener('click', function () { load(true); });
   $('btn-reload-3').addEventListener('click', function () { load(true); });
   $('tab-budget').addEventListener('click', function () { ui.view = 'budget'; if (data) render(); });
@@ -3439,7 +3454,7 @@
   $('tab-points').addEventListener('click', function () { ui.view = 'points'; if (data) render(); });
   $('btn-reload-5').addEventListener('click', function () { load(true); });
   $('btn-add-recur').addEventListener('click', function () { if (data) openRecur(null); });
-  $('btn-reload-4').addEventListener('click', function () { load(true); });
+  $('btn-reload-4').addEventListener('click', reloadRecurring);
   $('f-person').addEventListener('change', function (e) { ui.person = e.target.value; renderTasks(); });
   $('btn-add-expense').addEventListener('click', function () { if (data) openExpense(null); });
 
