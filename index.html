@@ -2487,6 +2487,8 @@
   }
   function shortDate(iso) { return iso.slice(8, 10) + '.' + iso.slice(5, 7); }
 
+  var printNames = [];
+
   function openPrint() {
     var weeks = [[-1, 'Săptămâna trecută'], [0, 'Săptămâna aceasta'], [1, 'Săptămâna viitoare'], [2, 'Peste două săptămâni']]
       .map(function (w) {
@@ -2497,6 +2499,7 @@
     var names = can('proiecte')
       ? personNames(data.tasks.map(function (t) { return t.persoana; }))
       : personNames([]).filter(function (n) { return (data.myNames || []).indexOf(n.toLowerCase()) !== -1; });
+    printNames = names;
     var opts = [['', 'Toate persoanele']].concat(names.map(function (n) { return [n, n]; }));
     if (can('proiecte')) opts.push([NONE, 'Nedesemnate']);
     setOptions($('pr-person'), opts, ui.person && ui.person !== NONE ? ui.person : '');
@@ -2509,11 +2512,25 @@
   function buildPrint(week, who, pages) {
     var area = $('print-area');
     var groups = {};
+    // Sarcinile recurente fără persoană se pot face de oricine: apar pe pagina fiecărei persoane.
+    var shared = week.items.filter(function (it) { return !it.persoana && it.recurenta; });
     week.items.forEach(function (it) {
       var key = it.persoana || NONE;
       if (who && key.toLowerCase() !== who.toLowerCase()) return;
+      if (key === NONE && who !== NONE && it.recurenta) return; // sunt deja pe paginile persoanelor
       (groups[key] = groups[key] || []).push(it);
     });
+    if (shared.length && who !== NONE) {
+      var seen = {};
+      var people = (who ? [who] : printNames.concat(Object.keys(groups).filter(function (k) { return k !== NONE; })))
+        .filter(function (n) { var l = n.toLowerCase(); if (seen[l]) return false; seen[l] = 1; return true; });
+      people.forEach(function (n) {
+        var key = Object.keys(groups).filter(function (k) { return k.toLowerCase() === n.toLowerCase(); })[0] || n;
+        groups[key] = (groups[key] || []).concat(shared.map(function (it) {
+          return Object.assign({}, it, { oricine: true });
+        }));
+      });
+    }
     var keys = Object.keys(groups).sort(function (a, b) {
       if (a === NONE) return 1;
       if (b === NONE) return -1;
@@ -2524,10 +2541,11 @@
     var range = roDate(week.monday) + ' – ' + roDate(week.sunday);
     var nodes = keys.map(function (k) {
       var items = groups[k].sort(function (a, b) {
-        return a.termen.localeCompare(b.termen) || String(a.titlu).localeCompare(String(b.titlu), 'ro');
+        return a.termen.localeCompare(b.termen) || (a.oricine ? 1 : 0) - (b.oricine ? 1 : 0) ||
+          String(a.titlu).localeCompare(String(b.titlu), 'ro');
       });
       var tbody = el('tbody');
-      var total = 0, count = 0;
+      var total = 0, count = 0, anyTotal = 0, anyCount = 0;
       for (var i = 0; i < 7; i++) {
         var d = isoAdd(week.monday, i);
         var dayItems = items.filter(function (it) { return it.termen === d; });
@@ -2540,8 +2558,10 @@
         }
         dayItems.forEach(function (it, j) {
           var doneIt = it.status === data.statuses[data.statuses.length - 1];
-          total += num(it.puncte); count++;
+          if (it.oricine) { anyTotal += num(it.puncte); anyCount++; }
+          else { total += num(it.puncte); count++; }
           var meta = [];
+          if (it.oricine) meta.push('pentru oricine');
           if (it.proiect) meta.push(it.proiect);
           if (it.status && !doneIt && it.status !== data.statuses[0]) meta.push(it.status.toLowerCase());
           tbody.append(el('tr', { class: j === 0 ? 'pr-day-start' : null },
@@ -2559,7 +2579,9 @@
             el('th', { text: 'Ziua' }), el('th', { text: 'Sarcina' }),
             el('th', { text: 'Puncte', style: 'text-align:right' }), el('th', { text: 'Făcut', style: 'text-align:center' }))),
           tbody),
-        el('p', { class: 'pr-total', text: count + (count === 1 ? ' sarcină' : ' sarcini') + ', ' + pointsWord(total) + ' de strâns.' }));
+        el('p', { class: 'pr-total', text: count + (count === 1 ? ' sarcină' : ' sarcini') + ', ' + pointsWord(total) + ' de strâns.' +
+          (anyCount ? ' Plus ' + anyCount + (anyCount === 1 ? ' sarcină' : ' sarcini') + ' pentru oricine (' + pointsWord(anyTotal) +
+            '): punctele le primește cine o face.' : '') }));
     });
     area.replaceChildren.apply(area, nodes);
     return true;
