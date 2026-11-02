@@ -1207,11 +1207,11 @@
     });
   }
 
-  /** Reîncarcă și recreează sarcinile recurente care lipsesc de azi până duminică. */
+  /** Reîncarcă și recreează sarcinile recurente de azi care lipsesc. */
   function reloadRecurring(e) {
     var btn = e && e.currentTarget;
     if (btn) btn.disabled = true;
-    return server('regenereazaSaptamana').then(function (d) {
+    return server('regenereazaAzi').then(function (d) {
       data = d;
       $('loading').hidden = true;
       render();
