@@ -931,6 +931,21 @@
 </dialog>
 
 <div id="busy" class="busy" aria-hidden="true"></div>
+<dialog id="dlg-claim" aria-labelledby="dlg-claim-title">
+  <form id="form-claim" novalidate>
+    <h2 id="dlg-claim-title">Cine face sarcina?</h2>
+    <p class="summary" id="cl-info" style="margin-top:0"></p>
+    <div class="field">
+      <label for="cl-person">Persoana</label>
+      <select id="cl-person"></select>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn primary" id="cl-go">Marchează gata</button>
+      <button type="button" class="btn" data-close>Renunță</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="print-area"></div>
 
@@ -1381,19 +1396,53 @@
   }
 
 
-  function changeStatus(t, status) {
+  function changeStatus(t, status, persoana) {
     var previous = t.status;
     if (status === previous) return;
+    // Sarcină nedesemnată: cine o ia în lucru sau o termină se alege din listă și primește punctele.
+    if (!String(t.persoana || '').trim() && status !== data.statuses[0] && !persoana) {
+      var opts = claimOptions();
+      if (!opts.length) { toast('Nu există persoane la care să treacă sarcina. Adaugă persoane în Config.', true); return; }
+      if (opts.length === 1) { changeStatus(t, status, opts[0]); return; }
+      openClaim(t, status, opts);
+      return;
+    }
+    var prevWho = t.persoana;
     t.status = status;
+    if (persoana) t.persoana = persoana;
     render();
-    server('setTaskStatus', t.id, status).then(function (d) {
+    server('setTaskStatus', t.id, status, persoana || '').then(function (d) {
       data = d; render();
-      if (isDone(t)) toast('„' + t.titlu + '” e gata', false, { label: 'Anulează', fn: function () { changeStatus(t, previous); } });
-      else toast('Status: ' + status);
+      if (isDone(t)) toast('„' + t.titlu + '” e gata' + (persoana ? ', pentru ' + persoana : ''), false,
+        { label: 'Anulează', fn: function () { changeStatus(t, previous); } });
+      else toast('Status: ' + status + (persoana ? ', pentru ' + persoana : ''));
     }).catch(function (e) {
-      t.status = previous; render(); toast(errText(e), true);
+      t.status = previous; t.persoana = prevWho; render(); toast(errText(e), true);
     });
   }
+
+  /** Cine poate fi ales: toate persoanele pentru Proiecte, altfel persoanele urmărite de cont. */
+  function claimOptions() {
+    if (can('proiecte')) return personNames(data.myPeople || []);
+    return (data.myPeople || []).slice();
+  }
+
+  var claimCtx = null;
+  function openClaim(t, status, opts) {
+    claimCtx = { t: t, status: status };
+    $('cl-info').textContent = '„' + t.titlu + '” nu e desemnată nimănui. Pe numele cui trece? Punctele merg la persoana aleasă.';
+    var mine = (data.myPeople || [])[0] || '';
+    setOptions($('cl-person'), opts.map(function (n) { return [n, n]; }), opts.indexOf(mine) !== -1 ? mine : opts[0]);
+    $('cl-go').textContent = status === data.statuses[data.statuses.length - 1] ? 'Marchează gata' : 'Ia în lucru';
+    $('dlg-claim').showModal();
+  }
+  $('form-claim').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var ctx = claimCtx; claimCtx = null;
+    $('dlg-claim').close();
+    if (ctx) changeStatus(ctx.t, ctx.status, $('cl-person').value);
+  });
+
 
   var SVG_NS = 'http://www.w3.org/2000/svg';
   var STATUS_ICONS = {
