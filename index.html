@@ -339,6 +339,12 @@
 
   /* Printare */
   #print-area { display: none; }
+  /* Pe telefon derulează conținutul, nu pagina: barele browserului stau pe loc și nu acoperă meniul de jos. */
+  @media screen and (max-width: 600px) {
+    html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+    .wrap { height: 100vh; height: 100dvh; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; }
+  }
+
   @media print {
     @page { margin: 14mm; }
     html, body { background: #fff !important; }
@@ -1450,7 +1456,7 @@
   $('tab-more').addEventListener('click', function () {
     $('more-list').replaceChildren.apply($('more-list'), navRest.map(function (v) {
       var row = el('button', { type: 'button', class: 'more-row', 'aria-current': ui.view === v ? 'page' : null,
-        onclick: function () { $('dlg-more').close(); $('tab-' + v).click(); window.scrollTo(0, 0); } });
+        onclick: function () { $('dlg-more').close(); $('tab-' + v).click(); document.querySelector('.wrap').scrollTop = 0; window.scrollTo(0, 0); } });
       row.innerHTML = navIcon(v);
       row.append(el('span', { text: $('tab-' + v).dataset.full }));
       return row;
