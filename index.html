@@ -70,6 +70,12 @@
   }
   @media (hover: hover) { .tab:hover { color: var(--ink); background: var(--bg); } }
   .tab[aria-selected="true"] { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .tab .ni, .tab .ns, #tab-more { display: none; }
+  .more-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 4px; background: none; border: 0;
+    border-bottom: 1px solid var(--line); cursor: pointer; text-align: left; font-size: 1rem; }
+  .more-row:last-child { border-bottom: 0; }
+  .more-row svg { width: 22px; height: 22px; color: var(--accent); flex: 0 0 auto; }
+  .more-row[aria-current="page"] { color: var(--accent); font-weight: 600; }
 
   /* Controale */
   .btn {
@@ -301,6 +307,30 @@
   .tx-list { list-style: none; margin: 6px 0 0; padding: 0; font-size: 0.875rem; }
   .tx-list li { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; border-top: 1px solid var(--line); }
   .tx-list li .grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  /* Diagnostic */
+  .dg-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+  .dg-tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; box-shadow: var(--shadow); }
+  .dg-tile .v { font-size: 1.375rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.25; }
+  .dg-tile .l { color: var(--muted); font-size: 0.8125rem; }
+  .dg-tile .s { color: var(--muted); font-size: 0.8125rem; margin-top: 2px; }
+  .dg-tile.bad .v { color: var(--danger); }
+  .dg-chart { display: flex; align-items: flex-end; gap: 2px; height: 140px; margin: 16px 0 4px; padding: 8px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--radius); }
+  .dg-bar { flex: 1 1 0; min-width: 2px; display: flex; flex-direction: column-reverse; height: 100%; }
+  .dg-bar span { display: block; width: 100%; }
+  .dg-bar .r { background: var(--accent); }
+  .dg-bar .t { background: var(--planned); }
+  .dg-bar .e { background: var(--danger); }
+  .dg-axis { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.75rem; }
+  .dg-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--muted); font-size: 0.8125rem; margin-top: 6px; }
+  .dg-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .lt-progress { height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; margin: 12px 0; }
+  .lt-progress span { display: block; height: 100%; background: var(--accent); width: 0; transition: width .4s linear; }
+  .lt-verdict { padding: 12px 14px; border-radius: var(--radius); margin: 12px 0; font-weight: 500; }
+  .lt-verdict.green { background: #E6F2E8; color: #24613A; }
+  .lt-verdict.yellow { background: #FBF0D9; color: #7A5212; }
+  .lt-verdict.red { background: var(--late-bg); color: var(--danger); }
+
   .inline-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin: 10px 0 0; }
   .inline-form .field { margin: 0; flex: 1 1 180px; }
   .tasks td input.cat-budget { width: 120px; text-align: right; padding: 4px 8px; }
@@ -382,12 +412,28 @@
     .top h1 { font-size: 1.25rem; }
     .who { font-size: 0.8125rem; order: 3; }
     #btn-signout { margin-left: auto; }
+    /* Meniul devine o bară fixă jos, cu iconițe; ce nu încape stă sub „Mai mult". */
+    .wrap { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
     .tabs {
-      position: sticky; top: 0; z-index: 5; margin: 12px -14px 0; padding: 6px 14px;
-      border-radius: 0; border-width: 0 0 1px; box-shadow: none;
-      background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px);
+      position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 15; margin: 0; gap: 0;
+      padding: 0 max(4px, env(safe-area-inset-left)) env(safe-area-inset-bottom);
+      justify-content: space-around; overflow: visible;
+      border-radius: 0; border-width: 1px 0 0; box-shadow: 0 -2px 10px rgba(43, 33, 28, 0.06);
+      background: var(--surface);
     }
-    .tab { padding: 9px 13px; }
+    .tab {
+      flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
+      padding: 7px 2px 8px; border-radius: 0; font-size: 0.6875rem; font-weight: 500;
+      border-top: 3px solid transparent;
+    }
+    .tab[hidden], .tab:not(.prim) { display: none; }
+    #tab-more.prim { display: flex; }
+    .tab[aria-selected="true"], .tab.on { background: none; color: var(--accent); border-top-color: var(--accent); font-weight: 600; }
+    .tab .ni { display: block; height: 22px; }
+    .tab .ni svg { width: 22px; height: 22px; display: block; }
+    .tab .nl { display: none; }
+    .tab .ns { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #toast { bottom: calc(76px + env(safe-area-inset-bottom)); }
 
     .toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0 10px; }
     .toolbar > .grow, .toolbar > .summary, .toolbar .right { grid-column: 1 / -1; }
@@ -438,7 +484,6 @@
     }
     dialog .actions .btn { flex: 1 1 auto; }
     dialog .actions .spacer { display: none; }
-    #toast { bottom: calc(16px + env(safe-area-inset-bottom)); }
   }
 </style>
 </head>
@@ -457,6 +502,8 @@
     <button class="tab" role="tab" id="tab-points" aria-selected="false" aria-controls="view-points">Puncte</button>
     <button class="tab" role="tab" id="tab-budget" aria-selected="false" aria-controls="view-budget">Buget lunar</button>
     <button class="tab" role="tab" id="tab-bank" aria-selected="false" aria-controls="view-bank">Administrare bugete</button>
+    <button class="tab" role="tab" id="tab-diag" aria-selected="false" aria-controls="view-diag" hidden>Diagnostic</button>
+    <button class="tab" type="button" id="tab-more" aria-haspopup="dialog" hidden>Mai mult</button>
   </div>
 
   <main>
@@ -666,6 +713,55 @@
       </div>
       <p class="summary" id="alloc-summary"></p>
       <div id="alloc-body"></div>
+    </section>
+
+    <section id="view-diag" role="tabpanel" aria-labelledby="tab-diag" hidden>
+      <div class="section-head" style="margin-top:20px">
+        <h2>Ultima oră</h2>
+        <button class="btn" type="button" id="dg-refresh">Reîmprospătează</button>
+      </div>
+      <p class="summary">Indicatorii se calculează la server, pentru fiecare cerere, și se țin în memoria temporară Google cam 2 ore. Sunt orientativi: când vin multe cereri deodată se poate pierde câte una din numărătoare.</p>
+      <div class="dg-tiles" id="dg-tiles"></div>
+      <div class="dg-chart" id="dg-chart" role="img" aria-label="Cereri pe minut în ultima oră"></div>
+      <div class="dg-axis"><span id="dg-from"></span><span id="dg-max"></span><span>acum</span></div>
+      <div class="dg-legend">
+        <span><i style="background:var(--accent)"></i>cereri reale</span>
+        <span><i style="background:var(--planned)"></i>cereri de test</span>
+        <span><i style="background:var(--danger)"></i>erori</span>
+      </div>
+
+      <div class="section-head">
+        <h2>Foi și memoria rapidă</h2>
+        <button class="btn" type="button" id="dg-clear">Golește memoria rapidă</button>
+      </div>
+      <p class="summary">Citirile vin din memoria rapidă; o salvare recitește doar foile pe care le-a schimbat. Editările de mână din Sheet golesc foaia respectivă, iar totul expiră oricum după <span id="dg-ttl">30</span> de minute.</p>
+      <div id="dg-sheets"></div>
+
+      <div class="section-head">
+        <h2>Test de încărcare</h2>
+      </div>
+      <p class="summary">Pornește din browserul tău mai mulți utilizatori virtuali, care deschid aplicația (citire) sau fac o scriere de test. Scrierea de test ia lacătul și recitește foaia Sarcini, la fel ca salvarea unei sarcini, dar scrie doar în foaia ascunsă _Diagnostic, nu în datele voastre. Testul consumă din cotele zilnice Google și încetinește aplicația cât rulează, așa că pornește-l când nu o folosește nimeni. Rulează-l de pe calculator, cu tab-ul în față.</p>
+      <form class="inline-form" id="form-lt" novalidate>
+        <div class="field">
+          <label for="lt-vu">Utilizatori virtuali (1–30)</label>
+          <input type="number" id="lt-vu" min="1" max="30" step="1" value="5" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="lt-sec">Durata (secunde, 10–300)</label>
+          <input type="number" id="lt-sec" min="10" max="300" step="1" value="60" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="lt-think">Pauză între cereri (s, 0 = stres)</label>
+          <input type="number" id="lt-think" min="0" max="60" step="0.5" value="3" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label for="lt-writes">Scrieri (%)</label>
+          <input type="number" id="lt-writes" min="0" max="100" step="5" value="20" inputmode="numeric">
+        </div>
+        <button type="submit" class="btn primary" id="lt-go">Pornește testul</button>
+        <button type="button" class="btn" id="lt-stop" hidden>Oprește</button>
+      </form>
+      <div id="lt-live"></div>
     </section>
   </main>
 </div>
@@ -931,6 +1027,16 @@
 </dialog>
 
 <div id="busy" class="busy" aria-hidden="true"></div>
+<dialog id="dlg-more" aria-labelledby="dlg-more-title">
+  <form method="dialog">
+    <h2 id="dlg-more-title">Mai mult</h2>
+    <div id="more-list"></div>
+    <div class="actions">
+      <button type="button" class="btn" id="more-close">Închide</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="dlg-claim" aria-labelledby="dlg-claim-title">
   <form id="form-claim" novalidate>
     <h2 id="dlg-claim-title">Cine face sarcina?</h2>
@@ -1099,7 +1205,13 @@
     pending++;
     $('busy').classList.add('on');
     var done = function () { if (--pending === 0) $('busy').classList.remove('on'); };
-    return callServer.apply(null, arguments).then(function (v) { done(); return v; }, function (e) { done(); throw e; });
+    var args = arguments;
+    // Serverul ocupat cu altă salvare: nu s-a scris nimic, deci reîncercăm o dată după 2–4 secunde.
+    return callServer.apply(null, args).catch(function (e) {
+      if (args[0] === 'getAll' || errText(e).indexOf('Altcineva salvează') !== 0) throw e;
+      return new Promise(function (r) { setTimeout(r, 2000 + Math.random() * 2000); })
+        .then(function () { return callServer.apply(null, args); });
+    }).then(function (v) { done(); return v; }, function (e) { done(); throw e; });
   }
 
   function callServer(fn) {
@@ -1160,9 +1272,10 @@
     $('signin').hidden = false;
     $('btn-signout').hidden = true;
     $('no-role').hidden = true;
-    ['tasks', 'projects', 'recur', 'points', 'budget', 'bank'].forEach(function (v) {
+    ['tasks', 'projects', 'recur', 'points', 'budget', 'bank', 'diag'].forEach(function (v) {
       $('view-' + v).hidden = true; $('tab-' + v).hidden = true;
     });
+    $('tab-more').hidden = true;
     $('signin-text').textContent = msg || 'Intră cu contul Google ca să folosești Gospodărie.';
     if (window.google && google.accounts && google.accounts.id) {
       google.accounts.id.renderButton($('gsi-btn'), { theme: 'outline', size: 'large', text: 'signin_with', locale: 'ro' });
@@ -1257,7 +1370,8 @@
       recur: can('proiecte'),
       points: anyRole,
       budget: can('bugete'),
-      bank: can('bugete')
+      bank: can('bugete'),
+      diag: !!data.admin && !IN_APPS_SCRIPT
     };
   }
 
@@ -1268,7 +1382,7 @@
     $('who').textContent = (data.user || '') + (roles.length ? ', ' + roles.join(', ') : '');
 
     var allowed = allowedViews();
-    var order = ['tasks', 'projects', 'recur', 'points', 'budget', 'bank'];
+    var order = ['tasks', 'projects', 'recur', 'points', 'budget', 'bank', 'diag'];
     if (!allowed[ui.view]) ui.view = order.filter(function (v) { return allowed[v]; })[0] || '';
     $('no-role').hidden = !!ui.view;
     $('signin').hidden = true;
@@ -1278,7 +1392,7 @@
       $('view-' + v).hidden = ui.view !== v;
       $('tab-' + v).setAttribute('aria-selected', String(ui.view === v));
     });
-    if (ui.view) $('tab-' + ui.view).scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    layoutNav(order.filter(function (v) { return allowed[v]; }));
     if (!ui.view) return;
 
     var manage = can('proiecte');
@@ -1289,8 +1403,61 @@
     else if (ui.view === 'recur') renderRecurring();
     else if (ui.view === 'points') renderPoints();
     else if (ui.view === 'bank') renderBank();
+    else if (ui.view === 'diag') renderDiag();
     else renderBudget();
   }
+
+  /* ---------- Meniul: sus pe desktop, bară jos pe telefon ---------- */
+
+  var NAV = {
+    tasks: ['Sarcini', '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'],
+    projects: ['Proiecte', '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'],
+    recur: ['Recurente', '<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>'],
+    points: ['Puncte', '<path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>'],
+    budget: ['Buget', '<rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/><path d="M16 15h2"/>'],
+    bank: ['Extrase', '<path d="M3 10l9-6 9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 21h18"/>'],
+    diag: ['Diagnostic', '<path d="M3 12h4l3-8 4 16 3-8h4"/>'],
+    more: ['Mai mult', '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>']
+  };
+  // Ce rămâne în bară când nu încap toate (cel mult 5 butoane, cu tot cu „Mai mult").
+  var NAV_PRIORITY = ['tasks', 'projects', 'points', 'budget', 'recur', 'bank', 'diag'];
+  var navRest = [];
+
+  function navIcon(v) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + NAV[v][1] + '</svg>';
+  }
+  Object.keys(NAV).forEach(function (v) {
+    var b = $('tab-' + v);
+    var full = b.textContent;
+    b.replaceChildren(el('span', { class: 'ni' }), el('span', { class: 'nl', text: full }), el('span', { class: 'ns', text: NAV[v][0] }));
+    b.firstChild.innerHTML = navIcon(v);
+    b.dataset.full = full;
+  });
+
+  function layoutNav(visible) {
+    var ordered = NAV_PRIORITY.filter(function (v) { return visible.indexOf(v) !== -1; });
+    var prim = ordered.length <= 5 ? ordered : ordered.slice(0, 4);
+    navRest = ordered.filter(function (v) { return prim.indexOf(v) === -1; });
+    Object.keys(NAV).forEach(function (v) {
+      if (v !== 'more') $('tab-' + v).classList.toggle('prim', prim.indexOf(v) !== -1);
+    });
+    var more = $('tab-more');
+    more.hidden = !ui.view;
+    more.classList.toggle('prim', navRest.length > 0);
+    more.classList.toggle('on', navRest.indexOf(ui.view) !== -1);
+  }
+
+  $('tab-more').addEventListener('click', function () {
+    $('more-list').replaceChildren.apply($('more-list'), navRest.map(function (v) {
+      var row = el('button', { type: 'button', class: 'more-row', 'aria-current': ui.view === v ? 'page' : null,
+        onclick: function () { $('dlg-more').close(); $('tab-' + v).click(); window.scrollTo(0, 0); } });
+      row.innerHTML = navIcon(v);
+      row.append(el('span', { text: $('tab-' + v).dataset.full }));
+      return row;
+    }));
+    $('dlg-more').showModal();
+  });
+  $('more-close').addEventListener('click', function () { $('dlg-more').close(); });
 
   /* ---------- Sarcini ---------- */
 
@@ -2361,6 +2528,7 @@
   function walletRows(names) {
     var r = rw();
     var cur = today().slice(0, 7);
+    var scores = monthScores(cur); // aceleași puncte ca în clasament, cu bonus
     return names.map(function (n) {
       var key = n.toLowerCase();
       var castig = 0, chelt = 0;
@@ -2368,10 +2536,7 @@
         if (String(x.persoana || '').trim().toLowerCase() !== key) return;
         if (x.tip === 'castig') castig += num(x.suma); else chelt += num(x.suma);
       });
-      var pts = 0;
-      (data.pointsTasks || []).forEach(function (t) {
-        if (String(t.persoana || '').trim().toLowerCase() === key && doneMonth(t) === cur) pts += taskPoints(t);
-      });
+      var pts = scores[key] ? scores[key].puncte : 0;
       var estimat = Math.min(pts * num(r.settings.curs), num(r.settings.plafon));
       return { nume: n, castig: castig, chelt: chelt, sold: Math.round((castig - chelt) * 100) / 100, pts: pts, estimat: estimat };
     });
@@ -2489,8 +2654,10 @@
   var withdrawCtx = null;
   function openWithdraw(w) {
     withdrawCtx = w;
-    $('wd-info').replaceChildren('Din portofelul lui ', el('strong', { text: w.nume }), '. Sold: ',
-      el('strong', { class: 'num', text: leiExact(w.sold) }), '.');
+    var next = isoAdd(today().slice(0, 8) + '01', 32).slice(0, 8) + '01';
+    $('wd-info').replaceChildren('Din portofelul lui ', el('strong', { text: w.nume }), '. Se poate retrage cel mult ',
+      el('strong', { class: 'num', text: leiExact(w.sold) }), ', câștigul lunilor încheiate.',
+      w.estimat > 0 ? ' Cei ' + leiExact(w.estimat) + ' strânși luna aceasta (estimat) se pot retrage din ' + roDate(next) + '.' : '');
     $('wd-suma').value = '';
     $('wd-suma').max = w.sold;
     $('wd-data').value = today();
@@ -3272,6 +3439,227 @@
   $('tab-bank').addEventListener('click', function () { ui.view = 'bank'; if (data) render(); });
   $('btn-reload-6').addEventListener('click', function () { load(true); });
 
+  /* ---------- Diagnostic (doar proprietarul / administratorul) ---------- */
+
+  var diag = null;
+  var diagLoading = false;
+
+  function msTxt(ms) {
+    if (ms == null || !isFinite(ms)) return '–';
+    return ms < 1000 ? Math.round(ms) + ' ms' : (ms / 1000).toFixed(ms < 10000 ? 2 : 1).replace('.', ',') + ' s';
+  }
+  function hhmm(t) { var d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+  function tile(label, value, sub, bad) {
+    return el('div', { class: 'dg-tile' + (bad ? ' bad' : '') },
+      el('div', { class: 'l', text: label }), el('div', { class: 'v', text: value }), sub ? el('div', { class: 's', text: sub }) : null);
+  }
+  var KIND_NAMES = { lacat: 'așteptare la salvare', cota: 'prea multe execuții / cotă', auth: 'autentificare', retea: 'rețea', http: 'răspuns HTTP', alta: 'altele' };
+  function kindsTxt(k) {
+    return Object.keys(k || {}).map(function (x) { return (KIND_NAMES[x] || x) + ': ' + k[x]; }).join(', ');
+  }
+
+  function loadDiag(fn) {
+    if (diagLoading) return;
+    diagLoading = true;
+    server(fn || 'getDiagnostic').then(function (d) { diag = d; diagLoading = false; if (ui.view === 'diag') renderDiag(); })
+      .catch(function (e) { diagLoading = false; toast(errText(e), true); });
+  }
+
+  function renderDiag() {
+    if (!diag) {
+      $('dg-tiles').replaceChildren(el('p', { class: 'summary', text: 'Se încarcă indicatorii…' }));
+      loadDiag();
+      return;
+    }
+    var M = diag.minute || [];
+    var sum = function (k) { return M.reduce(function (s, m) { return s + (m[k] || 0); }, 0); };
+    var max = function (k) { return M.reduce(function (s, m) { return Math.max(s, m[k] || 0); }, 0); };
+    var n = sum('n'), t = sum('t'), w = sum('w'), e = sum('e');
+    var kinds = {};
+    M.forEach(function (m) { Object.keys(m.ek || {}).forEach(function (k) { kinds[k] = (kinds[k] || 0) + m.ek[k]; }); });
+    var peak = max('n');
+    $('dg-tiles').replaceChildren(
+      tile('Cereri', fmt.format(n), (t ? 'din care ' + fmt.format(t) + ' de test, ' : '') + 'vârf ' + peak + ' pe minut'),
+      tile('Timp la server', n ? msTxt(sum('ms') / n) : '–', 'în medie; maxim ' + msTxt(max('mx'))),
+      tile('Peste 5 secunde', fmt.format(sum('sl')), 'cereri lente', sum('sl') > 0),
+      tile('Salvări', fmt.format(w), w ? 'în medie ' + msTxt(sum('wms') / w) + ', maxim ' + msTxt(max('wmx')) : 'nicio salvare'),
+      tile('Așteptare la lacăt', w ? msTxt(sum('lk') / w) : '–', 'în medie pe salvare; maxim ' + msTxt(max('lkx'))),
+      tile('Citiri din foi', fmt.format(sum('rd')), n ? (sum('rd') / n).toFixed(1).replace('.', ',') + ' pe cerere; restul din memorie' : ''),
+      tile('Erori', fmt.format(e), e ? kindsTxt(kinds) : 'nicio eroare', e > 0),
+      tile('Emailuri rămase azi', diag.emailuriRamase == null ? '–' : fmt.format(diag.emailuriRamase), 'cota zilnică Google'),
+      tile('Notificări', diag.notificariOprite ? 'oprite' : 'pornite', 'email și Google Tasks')
+    );
+
+    var top = Math.max(1, peak);
+    $('dg-chart').replaceChildren.apply($('dg-chart'), M.map(function (m) {
+      var real = (m.n || 0) - (m.t || 0), test = m.t || 0, err = m.e || 0;
+      var h = function (v) { return (v / top * 100) + '%'; };
+      var tip = hhmm(m.min) + ': ' + (m.n || 0) + ' cereri' + (test ? ' (' + test + ' test)' : '') +
+        (m.n ? ', medie ' + msTxt(m.ms / m.n) + ', maxim ' + msTxt(m.mx) : '') + (err ? ', ' + err + ' erori' : '');
+      return el('div', { class: 'dg-bar', title: tip },
+        el('span', { class: 'r', style: 'height:' + h(Math.max(0, real - Math.min(err, real))) }),
+        el('span', { class: 't', style: 'height:' + h(Math.max(0, test - Math.max(0, err - real))) }),
+        el('span', { class: 'e', style: 'height:' + h(err) }));
+    }));
+    $('dg-from').textContent = M.length ? hhmm(M[0].min) : '';
+    $('dg-max').textContent = 'maxim ' + peak + ' cereri pe minut';
+    $('dg-ttl').textContent = String(Math.round((diag.memorieSecunde || 1800) / 60));
+
+    var tbody = el('tbody');
+    (diag.foi || []).forEach(function (f) {
+      tbody.append(el('tr', null,
+        el('td', { class: 'c-title', text: f.nume }),
+        el('td', { 'data-label': 'Rânduri', class: 'num', text: fmt.format(f.randuri) }),
+        el('td', { 'data-label': 'Coloane', class: 'num', text: String(f.coloane) }),
+        el('td', { 'data-label': 'În memoria rapidă', text: f.memorie == null ? '–' : (f.memorie ? 'da' : 'nu (se citește la prima cerere)') })));
+    });
+    $('dg-sheets').replaceChildren(el('table', { class: 'tasks' },
+      el('thead', null, el('tr', null, el('th', { scope: 'col', text: 'Foaie' }), el('th', { scope: 'col', class: 'num', text: 'Rânduri' }),
+        el('th', { scope: 'col', class: 'num', text: 'Coloane' }), el('th', { scope: 'col', text: 'În memoria rapidă' }))), tbody));
+    if (!LT) renderLt();
+  }
+
+  $('tab-diag').addEventListener('click', function () { ui.view = 'diag'; if (data) render(); });
+  $('dg-refresh').addEventListener('click', function () { loadDiag(); });
+  $('dg-clear').addEventListener('click', function () { loadDiag('golesteMemoriaApi'); toast('Memoria rapidă a fost golită.'); });
+
+  /* Test de încărcare: utilizatori virtuali care trimit cereri direct la API, marcate ca test. */
+
+  var LT = null;
+
+  function ltKind(msg) {
+    msg = String(msg || '');
+    if (msg.indexOf('AUTH:') === 0) return 'auth';
+    if (msg.indexOf('Altcineva salvează') !== -1) return 'lacat';
+    if (/too many|quota|limit exceeded|prea multe|simultan/i.test(msg)) return 'cota';
+    return 'alta';
+  }
+
+  function rawCall(fn) {
+    var t0 = performance.now();
+    return fetch(CFG.apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ fn: fn, args: [], token: idToken, test: true })
+    }).then(function (r) {
+      if (!r.ok) return { ok: false, kind: r.status === 429 ? 'cota' : 'http', err: 'HTTP ' + r.status };
+      return r.text().then(function (txt) {
+        var j;
+        try { j = JSON.parse(txt); } catch (e) { return { ok: false, kind: ltKind(txt), err: 'Răspuns care nu e JSON' }; }
+        return j.ok ? { ok: true, sms: j.ms } : { ok: false, kind: ltKind(j.error), err: j.error, sms: j.ms };
+      });
+    }).catch(function (e) {
+      return { ok: false, kind: 'retea', err: errText(e) };
+    }).then(function (r) { r.ms = performance.now() - t0; r.fn = fn; return r; });
+  }
+
+  function pct(arr, p) {
+    if (!arr.length) return null;
+    var a = arr.slice().sort(function (x, y) { return x - y; });
+    return a[Math.min(a.length - 1, Math.ceil(p / 100 * a.length) - 1)];
+  }
+
+  function ltStart(cfg) {
+    LT = { cfg: cfg, t0: Date.now(), end: Date.now() + cfg.sec * 1000, stop: false, active: cfg.vu, sent: 0, ok: 0, err: 0,
+      kinds: {}, lastErr: '', inflight: 0, maxIn: 0, lat: [], net: [], srv: [], rlat: [], wlat: [], writes: 0, writesOk: 0, done: false };
+    $('lt-go').disabled = true;
+    $('lt-stop').hidden = false;
+    for (var i = 0; i < cfg.vu; i++) {
+      // Pornirile se împrăștie pe prima secundă, ca utilizatorii să nu fie perfect sincronizați.
+      setTimeout(ltLoop, Math.random() * Math.min(1000, cfg.think * 1000 || 1000));
+    }
+    LT.timer = setInterval(renderLt, 500);
+    renderLt();
+  }
+
+  function ltLoop() {
+    var R = LT;
+    if (!R || R.done) return;
+    if (R.stop || Date.now() >= R.end) {
+      if (--R.active === 0) ltFinish();
+      return;
+    }
+    var write = Math.random() * 100 < R.cfg.writes;
+    R.sent++;
+    if (write) R.writes++;
+    R.inflight++;
+    R.maxIn = Math.max(R.maxIn, R.inflight);
+    rawCall(write ? 'testScriere' : 'getAll').then(function (r) {
+      R.inflight--;
+      R.lat.push(r.ms);
+      (write ? R.wlat : R.rlat).push(r.ms);
+      if (r.sms != null) { R.srv.push(r.sms); R.net.push(Math.max(0, r.ms - r.sms)); }
+      if (r.ok) { R.ok++; if (write) R.writesOk++; }
+      else { R.err++; R.kinds[r.kind] = (R.kinds[r.kind] || 0) + 1; R.lastErr = r.err; }
+      var pause = R.cfg.think * 1000 * (0.5 + Math.random());
+      setTimeout(ltLoop, pause);
+    });
+  }
+
+  function ltFinish() {
+    if (!LT || LT.done) return;
+    LT.done = true;
+    LT.endedAt = Date.now();
+    clearInterval(LT.timer);
+    $('lt-go').disabled = false;
+    $('lt-stop').hidden = true;
+    renderLt();
+    loadDiag();
+  }
+
+  function renderLt() {
+    var box = $('lt-live');
+    var R = LT;
+    if (!R) {
+      box.replaceChildren(el('p', { class: 'summary', text: 'Recomandat: întâi un test blând (5 utilizatori, pauză 3 s, 60 s), apoi unul de stres (20–30 de utilizatori, pauză 0). Limita Google este de 30 de execuții simultane pentru contul care rulează aplicația.' }));
+      return;
+    }
+    var now = R.done ? R.endedAt : Date.now();
+    var secs = Math.max(0.001, (now - R.t0) / 1000);
+    var doneN = R.ok + R.err;
+    var errRate = doneN ? R.err / doneN : 0;
+    var p95 = pct(R.lat, 95);
+    var progress = Math.min(100, (now - R.t0) / (R.cfg.sec * 1000) * 100);
+    var nodes = [
+      el('div', { class: 'lt-progress' }, el('span', { style: 'width:' + (R.done ? 100 : progress) + '%' })),
+      el('div', { class: 'dg-tiles' },
+        tile('Cereri trimise', fmt.format(R.sent), fmt.format(R.writes) + ' scrieri, ' + fmt.format(R.sent - R.writes) + ' citiri'),
+        tile('În zbor acum', String(R.inflight), 'maxim ' + R.maxIn + ' simultan'),
+        tile('Răspunsuri pe secundă', (doneN / secs).toFixed(2).replace('.', ','), fmt.format(doneN) + ' terminate în ' + Math.round(secs) + ' s'),
+        tile('Timp median', msTxt(pct(R.lat, 50)), '95% sub ' + msTxt(p95) + ', 99% sub ' + msTxt(pct(R.lat, 99))),
+        tile('Maxim', msTxt(R.lat.length ? Math.max.apply(null, R.lat) : null), 'cel mai lent răspuns'),
+        tile('La server / rețea și coadă', msTxt(pct(R.srv, 50)) + ' / ' + msTxt(pct(R.net, 50)), 'mediane'),
+        tile('Citiri', msTxt(pct(R.rlat, 50)), R.rlat.length ? '95% sub ' + msTxt(pct(R.rlat, 95)) : 'încă niciuna'),
+        tile('Scrieri', msTxt(pct(R.wlat, 50)), R.wlat.length ? '95% sub ' + msTxt(pct(R.wlat, 95)) + ', reușite ' + R.writesOk + '/' + R.writes : 'încă niciuna'),
+        tile('Erori', fmt.format(R.err), R.err ? kindsTxt(R.kinds) : 'nicio eroare', R.err > 0))
+    ];
+    if (R.lastErr) nodes.push(el('p', { class: 'summary', text: 'Ultima eroare: ' + R.lastErr }));
+    if (R.done) {
+      var cls = p95 != null && p95 < 3000 && errRate < 0.01 ? 'green' : (p95 != null && p95 <= 6000 && errRate <= 0.05 ? 'yellow' : 'red');
+      var verdict = { green: 'Verde: 95% din cereri sub 3 s și sub 1% erori.', yellow: 'Galben: merge, dar lent sau cu câteva erori (95% sub 6 s, sub 5% erori).', red: 'Roșu: prea lent sau prea multe erori pentru încărcarea asta.' }[cls];
+      nodes.push(el('div', { class: 'lt-verdict ' + cls, text: verdict + ' Capacitate măsurată: ' + (doneN / secs).toFixed(2).replace('.', ',') +
+        ' cereri pe secundă, cu ' + R.cfg.vu + ' utilizatori și ' + R.cfg.writes + '% scrieri.' + (R.maxIn < Math.min(R.cfg.vu, 6) + 1 && R.cfg.vu > 6 && R.cfg.think === 0 ? ' Atenție: browserul a ținut cel mult ' + R.maxIn + ' cereri în zbor, deci limita a fost la browser, nu la server.' : '') }));
+    }
+    box.replaceChildren.apply(box, nodes);
+  }
+
+  $('form-lt').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (LT && !LT.done) return;
+    var vu = Math.round(num($('lt-vu').value)), sec = Math.round(num($('lt-sec').value));
+    var think = num($('lt-think').value), writes = Math.round(num($('lt-writes').value));
+    if (!(vu >= 1 && vu <= 30)) { toast('Alege între 1 și 30 de utilizatori virtuali.', true); $('lt-vu').focus(); return; }
+    if (!(sec >= 10 && sec <= 300)) { toast('Durata trebuie să fie între 10 și 300 de secunde.', true); $('lt-sec').focus(); return; }
+    if (!(think >= 0 && think <= 60)) { toast('Pauza trebuie să fie între 0 și 60 de secunde.', true); $('lt-think').focus(); return; }
+    if (!(writes >= 0 && writes <= 100)) { toast('Procentul de scrieri trebuie să fie între 0 și 100.', true); $('lt-writes').focus(); return; }
+    if (!idToken || tokenExp(idToken) - Date.now() < (sec + 60) * 1000) {
+      toast('Sesiunea expiră în curând. Ieși din cont și intră din nou, apoi pornește testul.', true);
+      return;
+    }
+    ltStart({ vu: vu, sec: sec, think: think, writes: writes });
+  });
+  $('lt-stop').addEventListener('click', function () { if (LT) LT.stop = true; });
+
   /* ---------- Sarcini recurente ---------- */
 
   function isActive(r) { return r.activa === true || String(r.activa).toUpperCase() === 'TRUE'; }
@@ -3527,16 +3915,17 @@
     saveToken(null);
     if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect();
     data = null;
-    ['tasks', 'projects', 'recur', 'points', 'budget', 'bank'].forEach(function (v) {
+    ['tasks', 'projects', 'recur', 'points', 'budget', 'bank', 'diag'].forEach(function (v) {
       $('view-' + v).hidden = true; $('tab-' + v).hidden = true;
     });
+    $('tab-more').hidden = true;
     $('who').textContent = '';
     showSignin('Ai ieșit din cont.');
   });
 
   if (IN_APPS_SCRIPT) load(false);
   else {
-    ['tasks', 'projects', 'recur', 'points', 'budget', 'bank'].forEach(function (v) { $('tab-' + v).hidden = true; });
+    ['tasks', 'projects', 'recur', 'points', 'budget', 'bank', 'diag'].forEach(function (v) { $('tab-' + v).hidden = true; });
     startGithub();
   }
 })();
